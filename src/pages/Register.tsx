@@ -20,8 +20,7 @@ import { registrationSchema, industrySectors, type RegistrationFormData } from "
 import { registerTenant } from "@/utils/api";
 
 const STEPS = [
-  { id: "company", label: "Company Details" },
-  { id: "contact", label: "Contact Person" },
+  { id: "company", label: "Organization Details" },
   { id: "account", label: "Account Setup" },
 ];
 
@@ -31,7 +30,7 @@ const Register = () => {
   const [selectedSectors, setSelectedSectors] = useState<string[]>([]);
   const [recaptchaToken, setRecaptchaToken] = useState<string>("");
   const [currentStep, setCurrentStep] = useState(0);
-  const [progress, setProgress] = useState(33);
+  const [progress, setProgress] = useState(50);
 
   const form = useForm<RegistrationFormData>({
     resolver: zodResolver(registrationSchema),
@@ -56,7 +55,7 @@ const Register = () => {
 
   // Update progress when the current step changes
   useEffect(() => {
-    setProgress((currentStep + 1) * 33.33);
+    setProgress((currentStep + 1) * 50);
   }, [currentStep]);
 
   // Update form value when sectors selection changes
@@ -113,13 +112,9 @@ const Register = () => {
   // Check if current step is valid before proceeding
   const validateCurrentStep = () => {
     if (currentStep === 0) {
-      const companyResult = form.trigger([
-        "organizationDetails.companyName", 
-        "organizationDetails.industrySectors"
-      ]);
-      return companyResult;
-    } else if (currentStep === 1) {
       return form.trigger([
+        "organizationDetails.companyName", 
+        "organizationDetails.industrySectors",
         "contactPersonsDetails.0.fullName", 
         "contactPersonsDetails.0.emailAddress", 
         "contactPersonsDetails.0.mobilePhoneNumber"
@@ -198,7 +193,7 @@ const Register = () => {
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                   <Tabs value={STEPS[currentStep].id} className="w-full">
-                    {/* Company Details Step */}
+                    {/* Organization Details Step */}
                     <TabsContent value="company" className="mt-0">
                       <motion.div 
                         className="space-y-6"
@@ -206,7 +201,7 @@ const Register = () => {
                         initial="hidden"
                         animate="visible"
                       >
-                        <h3 className="text-lg font-medium">Organization Details</h3>
+                        <h3 className="text-lg font-medium">Organization & Contact Details</h3>
                         
                         <FormField
                           control={form.control}
@@ -251,95 +246,71 @@ const Register = () => {
                           )}
                         </div>
 
-                        <div className="flex justify-end pt-4">
-                          <Button 
-                            type="button" 
-                            onClick={handleNext}
-                            className="w-full sm:w-auto"
-                          >
-                            Next Step <ChevronRight className="ml-2 h-4 w-4" />
-                          </Button>
+                        <div className="pt-6 border-t">
+                          <h3 className="text-lg font-medium mb-4">Contact Person Details</h3>
+                          
+                          <FormField
+                            control={form.control}
+                            name="contactPersonsDetails.0.fullName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Full Name</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="Enter full name" 
+                                    {...field} 
+                                    className="h-11"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <FormField
+                              control={form.control}
+                              name="contactPersonsDetails.0.emailAddress"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Email Address</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      type="email" 
+                                      placeholder="Enter email address" 
+                                      {...field} 
+                                      className="h-11"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="contactPersonsDetails.0.mobilePhoneNumber"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Mobile Phone Number</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      placeholder="e.g. +1234567890" 
+                                      {...field} 
+                                      className="h-11"
+                                    />
+                                  </FormControl>
+                                  <FormDescription>
+                                    Include country code (e.g. +1 for US)
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
                         </div>
-                      </motion.div>
-                    </TabsContent>
 
-                    {/* Contact Person Step */}
-                    <TabsContent value="contact" className="mt-0">
-                      <motion.div 
-                        className="space-y-6"
-                        variants={itemVariants}
-                        initial="hidden"
-                        animate="visible"
-                      >
-                        <h3 className="text-lg font-medium">Contact Person Details</h3>
-                        
-                        <FormField
-                          control={form.control}
-                          name="contactPersonsDetails.0.fullName"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Full Name</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  placeholder="Enter full name" 
-                                  {...field} 
-                                  className="h-11"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="contactPersonsDetails.0.emailAddress"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Email Address</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="email" 
-                                  placeholder="Enter email address" 
-                                  {...field} 
-                                  className="h-11"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="contactPersonsDetails.0.mobilePhoneNumber"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Mobile Phone Number</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  placeholder="e.g. +1234567890" 
-                                  {...field} 
-                                  className="h-11"
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                Include country code (e.g. +1 for US)
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <div className="flex justify-between pt-4">
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            onClick={prevStep}
-                            className="w-full sm:w-auto"
-                          >
-                            <ChevronLeft className="mr-2 h-4 w-4" /> Previous
-                          </Button>
+                        <div className="flex justify-end pt-4">
                           <Button 
                             type="button" 
                             onClick={handleNext}
