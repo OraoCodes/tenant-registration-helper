@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import type { RegistrationFormData } from "./validation";
 
 const API_ENDPOINT = "https://api-feature-sprint2-q1-payment-integration.mr.saas.gebeya.io/v1/auth/signup";
-const LOGIN_ENDPOINT = "https://api-feature-sprint2-q1-payment-integration.mr.saas.gebeya.io/v1/auth/signin";
+const FIREBASE_LOGIN_ENDPOINT = "https://api-feature-sprint2-q1-payment-integration.mr.saas.gebeya.io/v1/auth/tenant/firebase";
 
 export async function registerTenant(formData: RegistrationFormData) {
   try {
@@ -41,31 +41,29 @@ export async function registerTenant(formData: RegistrationFormData) {
   }
 }
 
-export async function loginUser(email: string, password: string) {
+export async function loginUser(email: string) {
   try {
     const payload = {
-      emailAddress: email,
-      password: password,
+      email: email,
     };
 
-    const response = await fetch(LOGIN_ENDPOINT, {
+    const response = await fetch(FIREBASE_LOGIN_ENDPOINT, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0",
       },
       body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || "Login failed");
+      throw new Error(errorData.message || "Login request failed");
     }
 
     const data = await response.json();
-    // Store token or user data in localStorage for session management
-    localStorage.setItem("authToken", data.token);
-    localStorage.setItem("userData", JSON.stringify(data.user));
-    
+    toast.success("Login email sent! Please check your inbox.");
     return data;
   } catch (error) {
     if (error instanceof Error) {

@@ -9,35 +9,36 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { loginUser } from "@/utils/api";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Login = () => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = React.useState(false);
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
-      password: "",
     },
   });
 
   const onSubmit = async (values: LoginFormValues) => {
+    setIsLoading(true);
     try {
-      await loginUser(values.email, values.password);
-      toast.success("Login successful!");
-      navigate("/dashboard"); // Redirect to dashboard or home after login
+      await loginUser(values.email);
+      // We don't redirect here as this is now a passwordless email link flow
+      // Instead, show a success message (already handled in the API function)
     } catch (error) {
       // Error is already handled in the loginUser function
-      console.error("Login failed:", error);
+      console.error("Login request failed:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -64,7 +65,7 @@ const Login = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            Welcome back! Please enter your credentials.
+            Enter your email and we'll send you a login link
           </motion.p>
         </div>
 
@@ -90,22 +91,12 @@ const Login = () => {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="Enter your password" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button type="submit" className="w-full h-12">
-              Sign In
+            <Button 
+              type="submit" 
+              className="w-full h-12"
+              disabled={isLoading}
+            >
+              {isLoading ? "Sending login link..." : "Send me a login link"}
             </Button>
           </motion.form>
         </Form>
