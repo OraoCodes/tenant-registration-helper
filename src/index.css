@@ -14,7 +14,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 210 40% 10%;
 
-    --primary: 210 100% 50%;
+    --primary: 330 100% 60%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -43,6 +43,12 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Gebeya brand colors */
+    --gebeya-pink: 330 100% 60%;
+    --gebeya-orange: 24 100% 58%;
+    --gebeya-yellow: 40 100% 60%;
+    --gebeya-dark: 240 35% 12%;
   }
 
   .dark {
@@ -55,7 +61,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 217.2 91.2% 59.8%;
+    --primary: 330 100% 60%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -96,7 +102,7 @@
 }
 
 .glassmorphism {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -169,4 +175,17 @@ select:focus {
 
 .btn-primary:hover::after {
   left: 0;
+}
+
+/* Gebeya brand gradient classes */
+.gebeya-gradient-text {
+  @apply bg-gradient-to-r from-pink-600 via-orange-500 to-yellow-500 text-transparent bg-clip-text;
+}
+
+.gebeya-gradient-bg {
+  @apply bg-gradient-to-r from-pink-600 via-orange-500 to-yellow-500;
+}
+
+.gebeya-soft-gradient-bg {
+  @apply bg-gradient-to-r from-pink-500/10 via-orange-500/10 to-yellow-500/10;
 }
