@@ -6,22 +6,32 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import ReCAPTCHA from "react-google-recaptcha";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { ChevronRight, ChevronLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 
 import { registrationSchema, industrySectors, type RegistrationFormData } from "@/utils/validation";
 import { registerTenant } from "@/utils/api";
+
+const STEPS = [
+  { id: "company", label: "Company Details" },
+  { id: "contact", label: "Contact Person" },
+  { id: "account", label: "Account Setup" },
+];
 
 const Register = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedSectors, setSelectedSectors] = useState<string[]>([]);
   const [recaptchaToken, setRecaptchaToken] = useState<string>("");
+  const [currentStep, setCurrentStep] = useState(0);
+  const [progress, setProgress] = useState(33);
 
   const form = useForm<RegistrationFormData>({
     resolver: zodResolver(registrationSchema),
@@ -43,6 +53,11 @@ const Register = () => {
       recaptchaToken: "",
     },
   });
+
+  // Update progress when the current step changes
+  useEffect(() => {
+    setProgress((currentStep + 1) * 33.33);
+  }, [currentStep]);
 
   // Update form value when sectors selection changes
   useEffect(() => {
@@ -80,6 +95,43 @@ const Register = () => {
   const handleRecaptchaChange = (token: string | null) => {
     if (token) {
       setRecaptchaToken(token);
+    }
+  };
+
+  const nextStep = () => {
+    if (currentStep < STEPS.length - 1) {
+      setCurrentStep(prev => prev + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1);
+    }
+  };
+
+  // Check if current step is valid before proceeding
+  const validateCurrentStep = () => {
+    if (currentStep === 0) {
+      const companyResult = form.trigger([
+        "organizationDetails.companyName", 
+        "organizationDetails.industrySectors"
+      ]);
+      return companyResult;
+    } else if (currentStep === 1) {
+      return form.trigger([
+        "contactPersonsDetails.0.fullName", 
+        "contactPersonsDetails.0.emailAddress", 
+        "contactPersonsDetails.0.mobilePhoneNumber"
+      ]);
+    }
+    return true;
+  };
+
+  const handleNext = async () => {
+    const isValid = await validateCurrentStep();
+    if (isValid) {
+      nextStep();
     }
   };
 
@@ -131,224 +183,284 @@ const Register = () => {
               <CardDescription>
                 Create an account for your organization to get started
               </CardDescription>
+              <div className="mt-4">
+                <Progress value={progress} className="h-2" />
+                <div className="flex justify-between mt-2 text-sm text-muted-foreground">
+                  {STEPS.map((step, index) => (
+                    <span key={step.id} className={currentStep >= index ? "text-primary font-medium" : ""}>
+                      {step.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                  <motion.div 
-                    className="space-y-6"
-                    variants={itemVariants}
-                  >
-                    <h3 className="text-lg font-medium">Organization Details</h3>
-                    
-                    <FormField
-                      control={form.control}
-                      name="organizationDetails.companyName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Company Name</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Enter company name" 
-                              {...field} 
-                              className="h-11"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <div>
-                      <FormLabel>Industry Sectors</FormLabel>
-                      <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {industrySectors.map((sector) => (
-                          <div
-                            key={sector._id}
-                            className={`
-                              rounded-md border p-3 text-sm cursor-pointer transition-all
-                              ${selectedSectors.includes(sector._id) 
-                                ? 'border-primary bg-primary/10 text-primary' 
-                                : 'border-border hover:border-muted-foreground/50'}
-                            `}
-                            onClick={() => handleSectorToggle(sector._id)}
-                          >
-                            {sector.name}
-                          </div>
-                        ))}
-                      </div>
-                      {form.formState.errors.organizationDetails?.industrySectors && (
-                        <p className="text-sm font-medium text-destructive mt-2">
-                          {form.formState.errors.organizationDetails.industrySectors.message}
-                        </p>
-                      )}
-                    </div>
-                  </motion.div>
-
-                  <motion.div 
-                    className="space-y-6"
-                    variants={itemVariants}
-                  >
-                    <h3 className="text-lg font-medium">Contact Person Details</h3>
-                    
-                    <FormField
-                      control={form.control}
-                      name="contactPersonsDetails.0.fullName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Full Name</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Enter full name" 
-                              {...field} 
-                              className="h-11"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="contactPersonsDetails.0.emailAddress"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email Address</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="email" 
-                              placeholder="Enter email address" 
-                              {...field} 
-                              className="h-11"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="contactPersonsDetails.0.mobilePhoneNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Mobile Phone Number</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="e.g. +1234567890" 
-                              {...field} 
-                              className="h-11"
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Include country code (e.g. +1 for US)
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </motion.div>
-
-                  <motion.div 
-                    className="space-y-6"
-                    variants={itemVariants}
-                  >
-                    <h3 className="text-lg font-medium">Account Setup</h3>
-                    
-                    <FormField
-                      control={form.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="password" 
-                              placeholder="Create a strong password" 
-                              {...field} 
-                              className="h-11"
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Must include uppercase, lowercase, number, and special character
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="passwordConfirm"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Confirm Password</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="password" 
-                              placeholder="Confirm your password" 
-                              {...field} 
-                              className="h-11"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </motion.div>
-
-                  <motion.div 
-                    className="space-y-6"
-                    variants={itemVariants}
-                  >
-                    <div className="flex flex-col space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="agreeToTerms"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>
-                                I agree to the <Link to="/terms" className="text-primary underline">terms and conditions</Link>
-                              </FormLabel>
+                  <Tabs value={STEPS[currentStep].id} className="w-full">
+                    {/* Company Details Step */}
+                    <TabsContent value="company" className="mt-0">
+                      <motion.div 
+                        className="space-y-6"
+                        variants={itemVariants}
+                        initial="hidden"
+                        animate="visible"
+                      >
+                        <h3 className="text-lg font-medium">Organization Details</h3>
+                        
+                        <FormField
+                          control={form.control}
+                          name="organizationDetails.companyName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Company Name</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="Enter company name" 
+                                  {...field} 
+                                  className="h-11"
+                                />
+                              </FormControl>
                               <FormMessage />
-                            </div>
-                          </FormItem>
-                        )}
-                      />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <div>
+                          <FormLabel>Industry Sectors</FormLabel>
+                          <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-3">
+                            {industrySectors.map((sector) => (
+                              <div
+                                key={sector._id}
+                                className={`
+                                  rounded-md border p-3 text-sm cursor-pointer transition-all
+                                  ${selectedSectors.includes(sector._id) 
+                                    ? 'border-primary bg-primary/10 text-primary' 
+                                    : 'border-border hover:border-muted-foreground/50'}
+                                `}
+                                onClick={() => handleSectorToggle(sector._id)}
+                              >
+                                {sector.name}
+                              </div>
+                            ))}
+                          </div>
+                          {form.formState.errors.organizationDetails?.industrySectors && (
+                            <p className="text-sm font-medium text-destructive mt-2">
+                              {form.formState.errors.organizationDetails.industrySectors.message}
+                            </p>
+                          )}
+                        </div>
 
-                      <FormField
-                        control={form.control}
-                        name="recaptchaToken"
-                        render={() => (
-                          <FormItem>
-                            <div className="flex justify-center my-4">
-                              <ReCAPTCHA
-                                sitekey="6LcUF90qAAAAAPQaVEvPSzSPIAD3cbBnkni_j89t"
-                                onChange={handleRecaptchaChange}
-                              />
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                        <div className="flex justify-end pt-4">
+                          <Button 
+                            type="button" 
+                            onClick={handleNext}
+                            className="w-full sm:w-auto"
+                          >
+                            Next Step <ChevronRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </div>
+                      </motion.div>
+                    </TabsContent>
 
-                    <Button
-                      type="submit"
-                      className="w-full h-12 btn-primary"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? "Registering..." : "Register"}
-                    </Button>
-                  </motion.div>
+                    {/* Contact Person Step */}
+                    <TabsContent value="contact" className="mt-0">
+                      <motion.div 
+                        className="space-y-6"
+                        variants={itemVariants}
+                        initial="hidden"
+                        animate="visible"
+                      >
+                        <h3 className="text-lg font-medium">Contact Person Details</h3>
+                        
+                        <FormField
+                          control={form.control}
+                          name="contactPersonsDetails.0.fullName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Full Name</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="Enter full name" 
+                                  {...field} 
+                                  className="h-11"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="contactPersonsDetails.0.emailAddress"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email Address</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="email" 
+                                  placeholder="Enter email address" 
+                                  {...field} 
+                                  className="h-11"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="contactPersonsDetails.0.mobilePhoneNumber"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Mobile Phone Number</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="e.g. +1234567890" 
+                                  {...field} 
+                                  className="h-11"
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Include country code (e.g. +1 for US)
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="flex justify-between pt-4">
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            onClick={prevStep}
+                            className="w-full sm:w-auto"
+                          >
+                            <ChevronLeft className="mr-2 h-4 w-4" /> Previous
+                          </Button>
+                          <Button 
+                            type="button" 
+                            onClick={handleNext}
+                            className="w-full sm:w-auto"
+                          >
+                            Next Step <ChevronRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </div>
+                      </motion.div>
+                    </TabsContent>
+
+                    {/* Account Setup Step */}
+                    <TabsContent value="account" className="mt-0">
+                      <motion.div 
+                        className="space-y-6"
+                        variants={itemVariants}
+                        initial="hidden"
+                        animate="visible"
+                      >
+                        <h3 className="text-lg font-medium">Account Setup</h3>
+                        
+                        <FormField
+                          control={form.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Password</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="password" 
+                                  placeholder="Create a strong password" 
+                                  {...field} 
+                                  className="h-11"
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Must include uppercase, lowercase, number, and special character
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="passwordConfirm"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Confirm Password</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="password" 
+                                  placeholder="Confirm your password" 
+                                  {...field} 
+                                  className="h-11"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="flex flex-col space-y-4">
+                          <FormField
+                            control={form.control}
+                            name="agreeToTerms"
+                            render={({ field }) => (
+                              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                                <div className="space-y-1 leading-none">
+                                  <FormLabel>
+                                    I agree to the <Link to="/terms" className="text-primary underline">terms and conditions</Link>
+                                  </FormLabel>
+                                  <FormMessage />
+                                </div>
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="recaptchaToken"
+                            render={() => (
+                              <FormItem>
+                                <div className="flex justify-center my-4">
+                                  <ReCAPTCHA
+                                    sitekey="6LcUF90qAAAAAPQaVEvPSzSPIAD3cbBnkni_j89t"
+                                    onChange={handleRecaptchaChange}
+                                  />
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <div className="flex justify-between pt-4">
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            onClick={prevStep}
+                            className="w-full sm:w-auto"
+                          >
+                            <ChevronLeft className="mr-2 h-4 w-4" /> Previous
+                          </Button>
+                          <Button
+                            type="submit"
+                            className="w-full sm:w-auto"
+                            disabled={isSubmitting}
+                          >
+                            {isSubmitting ? "Registering..." : "Complete Registration"}
+                          </Button>
+                        </div>
+                      </motion.div>
+                    </TabsContent>
+                  </Tabs>
                 </form>
               </Form>
             </CardContent>
