@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -15,6 +14,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { registrationSchema, industrySectors, type RegistrationFormData } from "@/utils/validation";
 import { registerTenant } from "@/utils/api";
@@ -27,7 +27,7 @@ const STEPS = [
 const Register = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedSectors, setSelectedSectors] = useState<string[]>([]);
+  const [selectedSector, setSelectedSector] = useState<string>("");
   const [recaptchaToken, setRecaptchaToken] = useState<string>("");
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(50);
@@ -58,11 +58,13 @@ const Register = () => {
     setProgress((currentStep + 1) * 50);
   }, [currentStep]);
 
-  // Update form value when sectors selection changes
+  // Update form value when sector selection changes
   useEffect(() => {
-    const industrySectorsValue = selectedSectors.map(id => ({ _id: id }));
-    form.setValue("organizationDetails.industrySectors", industrySectorsValue);
-  }, [selectedSectors, form]);
+    if (selectedSector) {
+      const industrySectorsValue = [{ _id: selectedSector }];
+      form.setValue("organizationDetails.industrySectors", industrySectorsValue);
+    }
+  }, [selectedSector, form]);
 
   // Update form value when recaptcha token changes
   useEffect(() => {
@@ -83,12 +85,8 @@ const Register = () => {
     }
   };
 
-  const handleSectorToggle = (sectorId: string) => {
-    setSelectedSectors(prev => 
-      prev.includes(sectorId)
-        ? prev.filter(id => id !== sectorId)
-        : [...prev, sectorId]
-    );
+  const handleSectorChange = (sectorId: string) => {
+    setSelectedSector(sectorId);
   };
 
   const handleRecaptchaChange = (token: string | null) => {
@@ -221,30 +219,30 @@ const Register = () => {
                           )}
                         />
                         
-                        <div>
-                          <FormLabel>Industry Sectors</FormLabel>
-                          <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-3">
-                            {industrySectors.map((sector) => (
-                              <div
-                                key={sector._id}
-                                className={`
-                                  rounded-md border p-3 text-sm cursor-pointer transition-all
-                                  ${selectedSectors.includes(sector._id) 
-                                    ? 'border-primary bg-primary/10 text-primary' 
-                                    : 'border-border hover:border-muted-foreground/50'}
-                                `}
-                                onClick={() => handleSectorToggle(sector._id)}
-                              >
-                                {sector.name}
-                              </div>
-                            ))}
-                          </div>
-                          {form.formState.errors.organizationDetails?.industrySectors && (
-                            <p className="text-sm font-medium text-destructive mt-2">
-                              {form.formState.errors.organizationDetails.industrySectors.message}
-                            </p>
+                        <FormField
+                          control={form.control}
+                          name="organizationDetails.industrySectors"
+                          render={() => (
+                            <FormItem>
+                              <FormLabel>Industry Sector</FormLabel>
+                              <Select onValueChange={handleSectorChange} value={selectedSector}>
+                                <FormControl>
+                                  <SelectTrigger className="h-11">
+                                    <SelectValue placeholder="Select your industry sector" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {industrySectors.map((sector) => (
+                                    <SelectItem key={sector._id} value={sector._id}>
+                                      {sector.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
                           )}
-                        </div>
+                        />
 
                         <div className="pt-6 border-t">
                           <h3 className="text-lg font-medium mb-4">Contact Person Details</h3>
